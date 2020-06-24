@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'AutoOps
+
+  1.Increase volume and filesystem size when got a disk space alarm.
+
+  '
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOps
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: s3://repo.sam.597377428377/AutoOps/4bbbe1c49057fe39354fafd3945942f0
+    Labels:
+    - tests
+    SemanticVersion: 0.0.1
+Resources:
+  EBSAutoScalingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri:
+        Bucket: repo.sam.597377428377
+        Key: AutoOps/5eb1d6d01b1e544facc8cb2e4d44592a
+      DefinitionSubstitutions:
+        GetVolumeDetailsFunctionArn:
+          Fn::GetAtt:
+          - GetVolumeDetailsFunction
+          - Arn
+        ModifyVolumeSizeFunctionArn:
+          Fn::GetAtt:
+          - ModifyVolumeSizeFunction
+          - Arn
+        GetVolumeIdFunctionArn:
+          Fn::GetAtt:
+          - GetVolumeIdFunction
+          - Arn
+        GetEventDataFunctionArn:
+          Fn::GetAtt:
+          - GetEventDataFunction
+          - Arn
+        GrowLinuxXfsFunctionArn:
+          Fn::GetAtt:
+          - GrowLinuxXfsFunction
+          - Arn
+      Events:
+        EBSSpaceAlarm:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+              - aws.cloudwatch
+              detail-type:
+              - CloudWatch Alarm State Change
+              detail:
+                configuration:
+                  metrics:
+                    metricStat:
+                      metric:
+                        name:
+                        - disk_used_percent
+                        - LogicalDisk % Free Space
+                state:
+                  value:
+                  - ALARM
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: GetVolumeDetailsFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: ModifyVolumeSizeFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: GetVolumeIdFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: GetEventDataFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: GrowLinuxXfsFunction
+  GetVolumeDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetVolumeDetails
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://repo.sam.597377428377/AutoOps/ff250e8b078b090975dc1db311009332
+      Policies:
+      - AmazonEC2ReadOnlyAccess
+  ModifyVolumeSizeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ModifyVolumeSize
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://repo.sam.597377428377/AutoOps/51f4a4e796be44c0ae06a724171b024e
+      Policies:
+      - AmazonEC2FullAccess
+  GetVolumeIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetVolumeId
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://repo.sam.597377428377/AutoOps/f953cf4ad0f21f7aa5385d361d34318f
+      Policies:
+      - AmazonEC2ReadOnlyAccess
+  GetEventDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetEventData
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: s3://repo.sam.597377428377/AutoOps/f3b8bcc5cb24ca9d4816e0b47fc7fab6
+  GrowLinuxXfsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GrowLinuxXfs
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: s3://repo.sam.597377428377/AutoOps/7b51e8f5f63b3777b3e5749f5f9bb8bf
+      Policies:
+      - AmazonSSMFullAccess
+Outputs:
+  EBSAutoScalingStateMachineArn:
+    Description: EBS Autoscaling State machine ARN
+    Value:
+      Ref: EBSAutoScalingStateMachine
+  EBSAutoScalingStateMachineRoleArn:
+    Description: IAM Role created for EBS Autoscaling State machine based on the specified
+      SAM Policy Templates
+    Value:
+      Fn::GetAtt:
+      - EBSAutoScalingStateMachineRole
+      - Arn

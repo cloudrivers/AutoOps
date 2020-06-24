@@ -1,0 +1,8 @@
+# AutoOps
+
+This project contains useful operation process represented as a state machine using AWS StepFunctions. 
+
+## How to deploy 
+1. With sam cli
+
+2. Without sam cli
