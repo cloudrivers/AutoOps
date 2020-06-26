@@ -1,9 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  AutoOps
-
-  1.Increase volume and filesystem size when got a disk space alarm.
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: AutoOps
@@ -13,17 +11,19 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['tests']
     SemanticVersion: 0.0.1
-Resources:
-  EBSAutoScalingStateMachine:
+Resources: 
+  EBSScalingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       DefinitionUri: statemachine/ebs_autoscaling.asl.json
       DefinitionSubstitutions:
         GetVolumeDetailsFunctionArn: !GetAtt GetVolumeDetailsFunction.Arn
         ModifyVolumeSizeFunctionArn: !GetAtt ModifyVolumeSizeFunction.Arn
-        GetVolumeIdFunctionArn: !GetAtt GetVolumeIdFunction.Arn
-        GetEventDataFunctionArn: !GetAtt GetEventDataFunction.Arn
+        GetVolumeIdForWindowsFunctionArn: !GetAtt GetVolumeIdForWindowsFunction.Arn
+        GetVolumeIdForLinuxFunctionArn: !GetAtt GetVolumeIdForLinuxFunction.Arn
+        GetEbsAlarmDetailFunctionArn: !GetAtt GetEbsAlarmDetailFunction.Arn
         GrowLinuxXfsFunctionArn: !GetAtt GrowLinuxXfsFunction.Arn
+        GrowWindowsNtfsFunctionArn: !GetAtt GrowWindowsNtfsFunction.Arn
       Events:
         EBSSpaceAlarm:
           Type: CloudWatchEvent 
@@ -44,17 +44,64 @@ Resources:
                 state:
                   value: 
                     - ALARM
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /ebs_scale
+            Method: POST
       Policies: 
         - LambdaInvokePolicy:
             FunctionName: !Ref GetVolumeDetailsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref ModifyVolumeSizeFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref GetVolumeIdFunction
+            FunctionName: !Ref GetVolumeIdForWindowsFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref GetEventDataFunction
+            FunctionName: !Ref GetVolumeIdForLinuxFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetEbsAlarmDetailFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref GrowLinuxXfsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GrowWindowsNtfsFunction
+  EC2AlarmCreatingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/ec2alarm_autocreating.asl.json
+      DefinitionSubstitutions:
+        GetInstanceDetailFunctionArn: !GetAtt GetInstanceDetailFunction.Arn
+        GetWindowsVolumesFunctionArn: !GetAtt GetWindowsVolumesFunction.Arn
+        GetLinuxVolumesFunctionArn: !GetAtt GetLinuxVolumesFunction.Arn
+        CreateLinuxDiskAlarmsFunctionArn: !GetAtt CreateLinuxDiskAlarmsFunction.Arn
+        CreateWindowsDiskAlarmsFunctionArn: !GetAtt CreateWindowsDiskAlarmsFunction.Arn
+      Events:
+        EC2StateToRunning:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - "EC2 Instance State-change Notification"
+              detail:
+                state: 
+                  - running
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /ec2_alarm_create
+            Method: POST
+      Policies: 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetInstanceDetailFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetWindowsVolumesFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetLinuxVolumesFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateLinuxDiskAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateWindowsDiskAlarmsFunction
   GetVolumeDetailsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -77,27 +124,38 @@ Resources:
       Timeout: 30
       CodeUri: functions/ModifyVolumeSize
       Policies: [AmazonEC2FullAccess]
-  GetVolumeIdFunction:
+  GetVolumeIdForLinuxFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetVolumeId
+      FunctionName: GetVolumeIdForLinux
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: functions/GetVolumeId
+      CodeUri: functions/GetVolumeIdForLinux
       Policies: [AmazonEC2ReadOnlyAccess]
-  GetEventDataFunction:
+  GetVolumeIdForWindowsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetEventData
+      FunctionName: GetVolumeIdForWindows
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetVolumeIdForWindows
+      Policies: [AmazonSSMFullAccess]
+  GetEbsAlarmDetailFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: GetEbsAlarmDetail
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 15
-      CodeUri: functions/GetEventData
+      CodeUri: functions/GetEbsAlarmDetail
   GrowLinuxXfsFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
@@ -109,13 +167,79 @@ Resources:
       Timeout: 15
       CodeUri: functions/GrowLinuxXfs
       Policies: [AmazonSSMFullAccess]
+  GrowWindowsNtfsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties: 
+      FunctionName: GrowWindowsNtfs
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: functions/GrowWindowsNtfs
+      Policies: [AmazonSSMFullAccess]
+  GetInstanceDetailFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties: 
+      FunctionName: GetInstanceDetail
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: functions/GetInstanceDetail
+      Policies: [AmazonEC2ReadOnlyAccess]
+  GetWindowsVolumesFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: GetWindowsVolumes
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetWindowsVolumes
+      Policies: [AmazonSSMFullAccess]
+  GetLinuxVolumesFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: GetLinuxVolumes
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetLinuxVolumes
+      Policies: [AmazonSSMFullAccess]
+  CreateLinuxDiskAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: CreateLinuxDiskAlarms
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/CreateLinuxDiskAlarms
+      Policies: [CloudWatchFullAccess]
+  CreateWindowsDiskAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      FunctionName: CreateWindowsDiskAlarms
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/CreateWindowsDiskAlarms
+      Policies: [CloudWatchFullAccess]        
 Outputs:
-  EBSAutoScalingStateMachineArn:
+  EBSScalingStateMachineArn:
     Description: "EBS Autoscaling State machine ARN"
-    Value: !Ref EBSAutoScalingStateMachine
-  EBSAutoScalingStateMachineRoleArn:
+    Value: !Ref EBSScalingStateMachine
+  EBSScalingStateMachineRoleArn:
     Description: "IAM Role created for EBS Autoscaling State machine based on the specified SAM Policy Templates"
-    Value: !GetAtt EBSAutoScalingStateMachineRole.Arn
+    Value: !GetAtt EBSScalingStateMachineRole.Arn
 
 
 

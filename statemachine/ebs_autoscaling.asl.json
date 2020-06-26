@@ -1,21 +1,44 @@
 {
   "Comment": "Increase volume and filesystem size when got a disk space alarm.",
-  "StartAt": "GetEventData",
+  "StartAt": "GetEbsAlarmDetail",
   "States": {
-    "GetEventData": {
+    "GetEbsAlarmDetail": {
       "Type": "Task",
-      "Resource": "${GetEventDataFunctionArn}",
+      "Resource": "${GetEbsAlarmDetailFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
-      "Next": "GetVolumeId"
+      "Next": "WindowsOrLinux?"
     },
-    "GetVolumeId": {
+    "WindowsOrLinux?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "disk_used_percent",
+          "Next": "GetVolumeIdForLinux"
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "LogicalDisk % Free Space",
+          "Next": "GetVolumeIdForWindows"
+        }        
+      ],
+      "Default": "AlarmNotSupport"
+    },
+    "GetVolumeIdForLinux": {
       "Type": "Task",
-      "Resource": "${GetVolumeIdFunctionArn}",
+      "Resource": "${GetVolumeIdForLinuxFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
       "Next": "GetVolumeDetails-CanModifyVolumeSize"
     },
+    "GetVolumeIdForWindows": {
+      "Type": "Task",
+      "Resource": "${GetVolumeIdForWindowsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "GetVolumeDetails-CanModifyVolumeSize"
+    },    
     "GetVolumeDetails-CanModifyVolumeSize": {
       "Type": "Task",
       "Resource": "${GetVolumeDetailsFunctionArn}",
@@ -72,12 +95,17 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.fstype",
-          "StringEquals": "xfs",
+          "Variable": "$.metricName",
+          "StringEquals": "disk_used_percent",
           "Next": "GrowLinuxXfs"
-        }
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "LogicalDisk % Free Space",
+          "Next": "GrowWindowsNtfs"
+        }  
       ],
-      "Default": "FsNotSupport"
+      "Default": "AlarmNotSupport"
     },
     "GrowLinuxXfs": {
       "Type": "Task",
@@ -86,9 +114,16 @@
       "ResultPath": "$",
       "End": true
     },
-    "FsNotSupport": {
+    "GrowWindowsNtfs": {
+      "Type": "Task",
+      "Resource": "${GrowWindowsNtfsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },    
+    "AlarmNotSupport": {
       "Type": "Fail",
-      "Cause": "FS type not supported!"
+      "Cause": "Alarm type not supported!"
     }
   }
 }

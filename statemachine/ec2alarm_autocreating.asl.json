@@ -1,0 +1,52 @@
+{
+  "Comment": "Increase volume and filesystem size when got a disk space alarm.",
+  "StartAt": "GetInstanceDetail",
+  "States": {
+    "GetInstanceDetail": {
+      "Type": "Task",
+      "Resource": "${GetInstanceDetailFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WindowsOrLinux?"
+    },
+    "WindowsOrLinux?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.PlatformDetails",
+          "StringEquals": "Windows",
+          "Next": "GetWindowsVolumes"
+        }      
+      ],
+      "Default": "GetLinuxVolumes"
+    },
+    "GetWindowsVolumes": {
+      "Type": "Task",
+      "Resource": "${GetWindowsVolumesFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateWindowsDiskAlarms"
+    },
+    "GetLinuxVolumes": {
+      "Type": "Task",
+      "Resource": "${GetLinuxVolumesFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateLinuxDiskAlarms"
+    },
+    "CreateLinuxDiskAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateLinuxDiskAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "CreateWindowsDiskAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateWindowsDiskAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    }
+  }
+}
