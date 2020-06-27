@@ -1,3 +1,4 @@
+import 
 import json
 import boto3
 
@@ -14,7 +15,7 @@ def lambda_handler(event, context):
     for vol in response.get('Volumes'):
         event['Size'] = vol.get('Size')
         break
-    event['NewSize'] = event['Size'] + 1
+    event['NewSize'] = event['Size'] + int(os.getenv('SCALING_SIZE', '10'))
     response = client.modify_volume(
         DryRun=False,
         VolumeId=event.get('VolumeId'),

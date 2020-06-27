@@ -1,3 +1,4 @@
+import os
 import time
 import boto3
 
@@ -8,12 +9,10 @@ def lambda_handler(event, context):
         InstanceIds=[
             event.get('InstanceId'),
         ],
-        DocumentName='ListLinuxDisks',
+        DocumentName=os.getenv('SSM_DOCNAME'),
         DocumentVersion='$DEFAULT',
-        DocumentHash='6e15838ece6609e01f463cef3668188038967af8747c12de7789e6a6cbdc4943',
-        DocumentHashType='Sha256',
         TimeoutSeconds=30,
-        Comment='Increase volume size because available space is low',
+        Comment=event.get('Comment', ''),
         Parameters={}
     )
     print(f'Response: {response}')

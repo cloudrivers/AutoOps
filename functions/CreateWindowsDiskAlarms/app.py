@@ -1,3 +1,4 @@
+import os
 import json
 import boto3
 
@@ -30,7 +31,7 @@ def lambda_handler(event, context):
             Period=60,
             EvaluationPeriods=1,
             DatapointsToAlarm=1,
-            Threshold=40.0,
+            Threshold=int(os.getenv('FREE_THRESHOLD', '20')),
             ComparisonOperator='LessThanOrEqualToThreshold',
             TreatMissingData='missing',
             Tags=[]

@@ -1,3 +1,4 @@
+import os
 import boto3
 
 def lambda_handler(event, context):
@@ -7,12 +8,10 @@ def lambda_handler(event, context):
         InstanceIds=[
             event.get('InstanceId'),
         ],
-        DocumentName='GrowLinuxXfs',
+        DocumentName=os.get('SSM_DOCNAME'),
         DocumentVersion='$DEFAULT',
-        DocumentHash='be60146f389d7b6323427db49eea63ad66b767a2c2ba291552cc8b74d3bf823c',
-        DocumentHashType='Sha256',
         TimeoutSeconds=30,
-        Comment='Increase volume size because available space is low',
+        Comment=event.get('Comment', ''),
         Parameters={
             'DeviceName': [event['DeviceName']],
             'PartitionNum': [event['PartitionNum']],
