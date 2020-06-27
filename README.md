@@ -14,13 +14,13 @@ This project contains useful operational processes represented as a state machin
     ```
     # aws s3 sync ./artifacts s3://bucket-name/AutoOps
     ```
-    - Modify the file packaged.yaml
+    - Modify the CloudFormation template packaged.yaml
         - Linux:
         ```
         # sed -i 's/<your S3 bucket>/bucket-name/g' packaged.yaml
         ```
         - MacOS:
         ```
-        sed -i '' 's/<your S3 bucket>/bucket-name/g' packaged.yaml
+        # sed -i '' 's/<your S3 bucket>/bucket-name/g' packaged.yaml
         ```
     - Run CloudFormation with packaged.yaml

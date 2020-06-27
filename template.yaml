@@ -105,7 +105,6 @@ Resources:
   GetVolumeDetailsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetVolumeDetails
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -116,7 +115,6 @@ Resources:
   ModifyVolumeSizeFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: ModifyVolumeSize
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -127,7 +125,6 @@ Resources:
   GetVolumeIdForLinuxFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetVolumeIdForLinux
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -138,7 +135,6 @@ Resources:
   GetVolumeIdForWindowsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetVolumeIdForWindows
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -149,7 +145,6 @@ Resources:
   GetEbsAlarmDetailFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetEbsAlarmDetail
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -159,7 +154,6 @@ Resources:
   GrowLinuxXfsFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
-      FunctionName: GrowLinuxXfs
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -170,7 +164,6 @@ Resources:
   GrowWindowsNtfsFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
-      FunctionName: GrowWindowsNtfs
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -181,7 +174,6 @@ Resources:
   GetInstanceDetailFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
-      FunctionName: GetInstanceDetail
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -192,7 +184,6 @@ Resources:
   GetWindowsVolumesFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetWindowsVolumes
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -203,7 +194,6 @@ Resources:
   GetLinuxVolumesFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: GetLinuxVolumes
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -214,7 +204,6 @@ Resources:
   CreateLinuxDiskAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: CreateLinuxDiskAlarms
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -225,7 +214,6 @@ Resources:
   CreateWindowsDiskAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
-      FunctionName: CreateWindowsDiskAlarms
       Handler: app.lambda_handler
       Runtime: python3.8
       Description: ''
@@ -237,9 +225,12 @@ Outputs:
   EBSScalingStateMachineArn:
     Description: "EBS Autoscaling State machine ARN"
     Value: !Ref EBSScalingStateMachine
-  EBSScalingStateMachineRoleArn:
+  EC2AlarmCreatingStateMachineArn:
     Description: "IAM Role created for EBS Autoscaling State machine based on the specified SAM Policy Templates"
-    Value: !GetAtt EBSScalingStateMachineRole.Arn
+    Value: !Ref EC2AlarmCreatingStateMachine
+  APIEndpoint:
+    Description: "API Endpoint"
+    Value: !Join ["/", ["https:", "", !Join [".", [!Ref ServerlessRestApi, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref ServerlessRestApiProdStage]]  
 
 
 
