@@ -9,7 +9,6 @@ Metadata:
     Author: whuaning
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
-    Labels: ['tests']
     SemanticVersion: 0.0.1
 Resources:
   GetWindowsVolumesDoc:
@@ -198,7 +197,16 @@ Resources:
               }
             }
           ]
-        } 
+        }
+  AutoOpsApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      EndpointConfiguration: PRIVATE
+      Auth:
+        ResourcePolicy:
+          SourceVpcWhitelist: 
+            - vpc-0f085c75
   EBSScalingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -236,6 +244,8 @@ Resources:
           Properties:
             Path: /ebs_scale
             Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
       Policies: 
         - LambdaInvokePolicy:
             FunctionName: !Ref GetVolumeDetailsFunction
@@ -278,6 +288,8 @@ Resources:
           Properties:
             Path: /ec2_alarm_create
             Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
       Policies: 
         - LambdaInvokePolicy:
             FunctionName: !Ref GetInstanceDetailFunction
@@ -288,7 +300,7 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateLinuxDiskAlarmsFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref CreateWindowsDiskAlarmsFunction
+            FunctionName: !Ref CreateWindowsDiskAlarmsFunction 
   GetVolumeDetailsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -441,7 +453,7 @@ Outputs:
     Value: !Ref EC2AlarmCreatingStateMachine
   APIEndpoint:
     Description: "APIGateway Endpoint to start start machines' execution"
-    Value: !Join ["/", ["https:", "", !Join [".", [!Ref ServerlessRestApi, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref ServerlessRestApiProdStage]]  
+    Value: !Join ["/", ["https:", "", !Join [".", [!Ref AutoOpsApiGateway, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref AutoOpsApiGatewayProdStage]]  
 
 
 

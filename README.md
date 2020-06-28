@@ -1,8 +1,14 @@
 # AutoOps
 
-This project contains useful operational processes represented as state machines with AWS StepFunctions. Currently, it is used for auto creating EBS usage alarm for EC2 instances and auto scaling EBS and file system on it.
+This project contains useful operational processes represented as state machines with AWS StepFunctions. Currently, it is used for auto-creating EBS usage alarms when EC2 instances starts and auto-scaling up EBS volumes and file systems. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up automatically and the Step Functions will stop with error when trying to scale up file systems.
 
-## How to deploy 
+## How to deploy
+
+0. Prerequisites
+
+    - For running SSM command, you need to install SSM Agent in your EC2 instances. Please refet to [https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html]
+
+    - For monitoring the disk usage, you need to install and config CloudWatch agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html] 
 
 1. With SAM CLI installed
     ```
@@ -25,15 +31,15 @@ This project contains useful operational processes represented as state machines
         # sed -i '' 's/<your S3 bucket>/bucket-name/g' packaged.yaml
         ```
     - Run CloudFormation with packaged.yaml, the outputs of CloudFormation includes:
-    1. EC2 disk alarm auto-creating state machine ARN
-    2. EBS auto-scaling state machine ARN
-    3. APIGateway Endpoint to start start machines' execution
+        1. EC2 disk alarm auto-creating state machine ARN
+        2. EBS auto-scaling state machine ARN
+        3. APIGateway Endpoint to start start machines' execution
 
 ## Test by API invokation
 
-0. Prerequisites
+A private API was created so you can start execution of state machines by invoking REST requests. If you want to do that, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
 
-    For monitor the disk usage, you need to install and config CloudWatch agent in your EC2 instances.
+**Please be noted that you should apply other security service such as IAM authorization to protect this API.**
 
 1. EC2 disk arlam auto-creating
     ```
