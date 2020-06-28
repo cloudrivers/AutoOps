@@ -2,7 +2,7 @@
 
 This project contains useful operational processes represented as state machines with AWS StepFunctions. 
 
-## What it do
+## What it does
 
 Currently, it creates EBS usage alarms when EC2 instances starts and scales up EBS volumes and file systems automatically. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up and the Step Functions will stop with error on trying to scale up file systems.
 
