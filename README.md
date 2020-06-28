@@ -12,6 +12,14 @@ The state mechine to scale EBS volume and its file systerm when disk alarm happe
 
 ![](doc/ebs_autoscaling.asl.png)
 
+Result on CentOS:
+
+![](doc/result_centos.png)
+
+Result on Windows:
+
+![](doc/result_windows.png)
+
 ## How to deploy
 
 0. Prerequisites

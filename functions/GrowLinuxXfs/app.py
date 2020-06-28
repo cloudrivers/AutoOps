@@ -8,7 +8,7 @@ def lambda_handler(event, context):
         InstanceIds=[
             event.get('InstanceId'),
         ],
-        DocumentName=os.get('SSM_DOCNAME'),
+        DocumentName=os.getenv('SSM_DOCNAME'),
         DocumentVersion='$DEFAULT',
         TimeoutSeconds=30,
         Comment=event.get('Comment', ''),
