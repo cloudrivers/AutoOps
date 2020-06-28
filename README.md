@@ -6,11 +6,11 @@ This project contains useful operational processes represented as state machines
 
 The state machine to put disk alarms when EC2 instances go running.
 
-[doc/ec2alarm_autocreating.asl.png]
+![](doc/ec2alarm_autocreating.asl.png)
 
 The state mechine to scale EBS volume and its file systerm when disk alarm happenes.
 
-[doc/ebs_autoscaling.asl.png]
+![](doc/ebs_autoscaling.asl.png)
 
 ## How to deploy
 
@@ -18,7 +18,7 @@ The state mechine to scale EBS volume and its file systerm when disk alarm happe
 
     - For running SSM command, you need to install SSM Agent in your EC2 instances. Please refet to [https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html]
 
-    - For monitoring the disk usage, you need to install and config CloudWatch agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html] 
+    - For monitoring the disk usage, you need to install and config CloudWatch agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html]
 
 1. With SAM CLI installed
     ```
