@@ -127,7 +127,7 @@ Resources:
               "name": "GetLinuxVolumes",
               "inputs": {
                 "runCommand": [
-                  "df -l | grep ^/dev"
+                  "df -l | grep ^/dev/"
                 ]
               }
             }

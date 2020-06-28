@@ -10,7 +10,7 @@ Metadata:
     Description: A toolkit for auto ops in AWS.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
-    ReadmeUrl: s3://<your S3 bucket>/AutoOps/202800a0070dbf43bebd1a5d9d50d8e6
+    ReadmeUrl: s3://<your S3 bucket>/AutoOps/b54e4a0a6e4ae9be938992282bfabb13
     SemanticVersion: 0.0.1
 Resources:
   GetWindowsVolumesDoc:
@@ -96,7 +96,7 @@ Resources:
         \ on Linux Instance\",\n  \"parameters\": {},\n  \"mainSteps\": [\n    {\n\
         \      \"action\": \"aws:runShellScript\",\n      \"name\": \"GetLinuxVolumes\"\
         ,\n      \"inputs\": {\n        \"runCommand\": [\n          \"df -l | grep\
-        \ ^/dev\"\n        ]\n      }\n    }\n  ]\n}\n"
+        \ ^/dev/\"\n        ]\n      }\n    }\n  ]\n}\n"
   GrowLinuxXfsDoc:
     Type: AWS::SSM::Document
     Properties:
@@ -347,7 +347,7 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 15
-      CodeUri: s3://<your S3 bucket>/AutoOps/0a2b27a760b0091c81915d21b0695f07
+      CodeUri: s3://<your S3 bucket>/AutoOps/2e6aadd297b805bf09d74e0490c01f83
       Policies:
       - AmazonSSMFullAccess
       Environment:

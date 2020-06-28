@@ -1,24 +1,18 @@
 # AutoOps
 
-This project contains useful operational processes represented as state machines with AWS StepFunctions. Currently, it is used for auto-creating EBS usage alarms when EC2 instances starts and auto-scaling up EBS volumes and file systems. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up automatically and the Step Functions will stop with error when trying to scale up file systems.
+This project contains useful operational processes represented as state machines with AWS StepFunctions. 
 
-## How it works
+## What it do
 
-The state machine to put disk alarms when EC2 instances go running.
+Currently, it creates EBS usage alarms when EC2 instances starts and scales up EBS volumes and file systems automatically. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up and the Step Functions will stop with error on trying to scale up file systems.
 
-![](doc/ec2alarm_autocreating.asl.png)
+- Result on CentOS:
 
-The state mechine to scale EBS volume and its file systerm when disk alarm happenes.
+    ![](doc/result_centos.png)
 
-![](doc/ebs_autoscaling.asl.png)
+- Result on Windows:
 
-Result on CentOS:
-
-![](doc/result_centos.png)
-
-Result on Windows:
-
-![](doc/result_windows.png)
+    ![](doc/result_windows.png)
 
 ## How to deploy
 
@@ -53,13 +47,16 @@ Result on Windows:
         2. EBS auto-scaling state machine ARN
         3. APIGateway Endpoint to start start machines' execution
 
-## Test by API invokation
+## How to try
 
-A private API was created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
+The state machines, who represent operational process, should be triggered by CloudWatch events. 
+
+For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
 
 **Please be noted that you should apply other security service such as IAM authorization to protect this API.**
 
 1. EC2 disk arlam auto-creating
+
     ```
     # curl <APIGateway Endpoint>/ec2_alarm_create -X POST -d '{"input": "{\"detail-type\": \"EC2 Instance State-change Notification\", \"source\": \"aws.ec2\", \"detail\": {\"instance-id\": \"<Your EC2 Instance ID for test>\", \"state\": \"running\"}}","stateMachineArn": "<EC2 disk alarm auto-creating state machine ARN>"}'
     ```
@@ -79,4 +76,13 @@ A private API was created so you can start execution of state machines by REST r
     ```
     # curl <APIGateway Endpoint>/ebs_scale -X POST -d '{"input": "{\"detail-type\": \"CloudWatch Alarm State Change\",\"source\": \"aws.cloudwatch\",\"detail\": {\"alarmName\": \"DiskSpace\",\"state\": {\"value\": \"ALARM\"},\"configuration\": {\"metrics\": [{\"metricStat\": {\"metric\": {\"namespace\": \"CWAgent\",\"name\": \"LogicalDisk % Free Space\",\"dimensions\": {\"instance\": \"<The Drive Letter>:\",\"InstanceId\": \"<Your EC2 Instance ID for test>\"}}}}]}}}","stateMachineArn": "<EBS auto-scaling state machine ARN>"}'
     ```
+## How it works
+
+The state machine to put disk alarms when EC2 instances go running.
+
+![](doc/ec2alarm_autocreating.asl.png)
+
+The state mechine to scale EBS volume and its file systerm when disk alarm happenes.
+
+![](doc/ebs_autoscaling.asl.png)
 
