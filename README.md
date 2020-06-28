@@ -37,7 +37,7 @@ This project contains useful operational processes represented as state machines
 
 ## Test by API invokation
 
-A private API was created so you can start execution of state machines by invoking REST requests. If you want to do that, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
+A private API was created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
 
 **Please be noted that you should apply other security service such as IAM authorization to protect this API.**
 
@@ -59,6 +59,6 @@ A private API was created so you can start execution of state machines by invoki
 3. EBS auto-scaling on Windows
 
     ```
-    curl https://z552xr3101.execute-api.us-east-1.amazonaws.com/Prod/ebs_scale -X POST -d '{"input": "{\"detail-type\": \"CloudWatch Alarm State Change\",\"source\": \"aws.cloudwatch\",\"detail\": {\"alarmName\": \"DiskSpace\",\"state\": {\"value\": \"ALARM\"},\"configuration\": {\"metrics\": [{\"metricStat\": {\"metric\": {\"namespace\": \"CWAgent\",\"name\": \"LogicalDisk % Free Space\",\"dimensions\": {\"instance\": \"<The Drive Letter>:\",\"InstanceId\": \"<Your EC2 Instance ID for test>\"}}}}]}}}","stateMachineArn": "<EBS auto-scaling state machine ARN>"}'
+    # curl <APIGateway Endpoint>/Prod/ebs_scale -X POST -d '{"input": "{\"detail-type\": \"CloudWatch Alarm State Change\",\"source\": \"aws.cloudwatch\",\"detail\": {\"alarmName\": \"DiskSpace\",\"state\": {\"value\": \"ALARM\"},\"configuration\": {\"metrics\": [{\"metricStat\": {\"metric\": {\"namespace\": \"CWAgent\",\"name\": \"LogicalDisk % Free Space\",\"dimensions\": {\"instance\": \"<The Drive Letter>:\",\"InstanceId\": \"<Your EC2 Instance ID for test>\"}}}}]}}}","stateMachineArn": "<EBS auto-scaling state machine ARN>"}'
     ```
 
