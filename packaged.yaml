@@ -10,7 +10,7 @@ Metadata:
     Description: A toolkit for auto ops in AWS.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
-    ReadmeUrl: s3://<your S3 bucket>/AutoOps/b54e4a0a6e4ae9be938992282bfabb13
+    ReadmeUrl: s3://<your S3 bucket>/AutoOps/db7bdc88a67e47bf77927a76b187f097
     SemanticVersion: 0.0.1
 Resources:
   GetWindowsVolumesDoc:
@@ -138,7 +138,7 @@ Resources:
     Properties:
       DefinitionUri:
         Bucket: <your S3 bucket>
-        Key: AutoOps/a609be2a47f42a79335713490c4b9961
+        Key: AutoOps/c42ac2925e4a9f90c3696e6ff2cde6b3
       DefinitionSubstitutions:
         GetVolumeDetailsFunctionArn:
           Fn::GetAtt:
@@ -156,9 +156,9 @@ Resources:
           Fn::GetAtt:
           - GetVolumeIdForLinuxFunction
           - Arn
-        GetEbsAlarmDetailFunctionArn:
+        LoadEbsAutoScalingInputFunctionArn:
           Fn::GetAtt:
-          - GetEbsAlarmDetailFunction
+          - LoadEbsAutoScalingInputFunction
           - Arn
         GrowLinuxXfsFunctionArn:
           Fn::GetAtt:
@@ -210,7 +210,7 @@ Resources:
             Ref: GetVolumeIdForLinuxFunction
       - LambdaInvokePolicy:
           FunctionName:
-            Ref: GetEbsAlarmDetailFunction
+            Ref: LoadEbsAutoScalingInputFunction
       - LambdaInvokePolicy:
           FunctionName:
             Ref: GrowLinuxXfsFunction
@@ -222,8 +222,12 @@ Resources:
     Properties:
       DefinitionUri:
         Bucket: <your S3 bucket>
-        Key: AutoOps/64df633e086b206e037508978fdc4353
+        Key: AutoOps/ab4fd0a313a6963dbc6583966ca9ad2a
       DefinitionSubstitutions:
+        LoadEc2AlarmAutoCreatingInputFunctionArn:
+          Fn::GetAtt:
+          - LoadEc2AlarmAutoCreatingInputFunction
+          - Arn
         GetInstanceDetailFunctionArn:
           Fn::GetAtt:
           - GetInstanceDetailFunction
@@ -244,6 +248,14 @@ Resources:
           Fn::GetAtt:
           - CreateWindowsDiskAlarmsFunction
           - Arn
+        DeleteEc2DiskAlarmsFunctionArn:
+          Fn::GetAtt:
+          - DeleteEc2DiskAlarmsFunction
+          - Arn
+        GetSSMInformationFunctionArn:
+          Fn::GetAtt:
+          - GetSSMInformationFunction
+          - Arn
       Events:
         EC2StateToRunning:
           Type: CloudWatchEvent
@@ -256,6 +268,7 @@ Resources:
               detail:
                 state:
                 - running
+                - terminated
         ApiEvent:
           Type: Api
           Properties:
@@ -264,6 +277,9 @@ Resources:
             RestApiId:
               Ref: AutoOpsApiGateway
       Policies:
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: LoadEc2AlarmAutoCreatingInputFunction
       - LambdaInvokePolicy:
           FunctionName:
             Ref: GetInstanceDetailFunction
@@ -279,6 +295,12 @@ Resources:
       - LambdaInvokePolicy:
           FunctionName:
             Ref: CreateWindowsDiskAlarmsFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: DeleteEc2DiskAlarmsFunction
+      - LambdaInvokePolicy:
+          FunctionName:
+            Ref: GetSSMInformationFunction
   GetVolumeDetailsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -330,7 +352,7 @@ Resources:
         Variables:
           SSM_DOCNAME:
             Ref: GetWindowsVolumesDoc
-  GetEbsAlarmDetailFunction:
+  LoadEbsAutoScalingInputFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: app.lambda_handler
@@ -338,7 +360,7 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 15
-      CodeUri: s3://<your S3 bucket>/AutoOps/8e1bf6f2aa7eb132b93a52c11cb62b5f
+      CodeUri: s3://<your S3 bucket>/AutoOps/60e02d58b4352dcb42498e21c505db00
   GrowLinuxXfsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -369,17 +391,6 @@ Resources:
         Variables:
           SSM_DOCNAME:
             Ref: GrowWindowsNtfsDoc
-  GetInstanceDetailFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: s3://<your S3 bucket>/AutoOps/d8e2ac6c5e52557c7d70ac4b06413c9d
-      Policies:
-      - AmazonEC2ReadOnlyAccess
   GetWindowsVolumesFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -417,7 +428,7 @@ Resources:
       Runtime: python3.8
       Description: ''
       MemorySize: 128
-      Timeout: 120
+      Timeout: 30
       CodeUri: s3://<your S3 bucket>/AutoOps/8dbbdd49a4ff8869b7085d8ef0e5ea45
       Policies:
       - CloudWatchFullAccess
@@ -431,13 +442,58 @@ Resources:
       Runtime: python3.8
       Description: ''
       MemorySize: 128
-      Timeout: 120
+      Timeout: 30
       CodeUri: s3://<your S3 bucket>/AutoOps/fb5fcf717588c3bf1661c8494d4ca922
       Policies:
       - CloudWatchFullAccess
       Environment:
         Variables:
           FREE_THRESHOLD: 20
+  DeleteEc2DiskAlarmsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://<your S3 bucket>/AutoOps/9b542a794d911f59535108a72f64b5bf
+      Policies:
+      - CloudWatchFullAccess
+  GetSSMInformationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: s3://<your S3 bucket>/AutoOps/52fd740f5d600da7b92a18dd10e77d95
+      Policies:
+      - AmazonSSMFullAccess
+      Environment:
+        Variables:
+          FREE_THRESHOLD: 20
+  LoadEc2AlarmAutoCreatingInputFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://<your S3 bucket>/AutoOps/001f9816834f0e316fa655d3eacdf424
+  GetInstanceDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://<your S3 bucket>/AutoOps/7c8ada866c6f596d8a9a966de391329c
+      Policies:
+      - AmazonEC2ReadOnlyAccess
 Outputs:
   EBSScalingStateMachineArn:
     Description: EBS auto-scaling state machine ARN

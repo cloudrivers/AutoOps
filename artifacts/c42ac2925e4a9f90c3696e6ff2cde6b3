@@ -1,10 +1,10 @@
 {
   "Comment": "Increase volume and filesystem size when got a disk space alarm.",
-  "StartAt": "GetEbsAlarmDetail",
+  "StartAt": "LoadEbsAutoScalingInput",
   "States": {
-    "GetEbsAlarmDetail": {
+    "LoadEbsAutoScalingInput": {
       "Type": "Task",
-      "Resource": "${GetEbsAlarmDetailFunctionArn}",
+      "Resource": "${LoadEbsAutoScalingInputFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
       "Next": "WindowsOrLinux?"

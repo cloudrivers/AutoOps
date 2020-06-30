@@ -216,7 +216,7 @@ Resources:
         ModifyVolumeSizeFunctionArn: !GetAtt ModifyVolumeSizeFunction.Arn
         GetVolumeIdForWindowsFunctionArn: !GetAtt GetVolumeIdForWindowsFunction.Arn
         GetVolumeIdForLinuxFunctionArn: !GetAtt GetVolumeIdForLinuxFunction.Arn
-        GetEbsAlarmDetailFunctionArn: !GetAtt GetEbsAlarmDetailFunction.Arn
+        LoadEbsAutoScalingInputFunctionArn: !GetAtt LoadEbsAutoScalingInputFunction.Arn
         GrowLinuxXfsFunctionArn: !GetAtt GrowLinuxXfsFunction.Arn
         GrowWindowsNtfsFunctionArn: !GetAtt GrowWindowsNtfsFunction.Arn
       Events:
@@ -256,7 +256,7 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref GetVolumeIdForLinuxFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref GetEbsAlarmDetailFunction
+            FunctionName: !Ref LoadEbsAutoScalingInputFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref GrowLinuxXfsFunction
         - LambdaInvokePolicy:
@@ -266,11 +266,14 @@ Resources:
     Properties:
       DefinitionUri: statemachine/ec2alarm_autocreating.asl.json
       DefinitionSubstitutions:
+        LoadEc2AlarmAutoCreatingInputFunctionArn: !GetAtt LoadEc2AlarmAutoCreatingInputFunction.Arn
         GetInstanceDetailFunctionArn: !GetAtt GetInstanceDetailFunction.Arn
         GetWindowsVolumesFunctionArn: !GetAtt GetWindowsVolumesFunction.Arn
         GetLinuxVolumesFunctionArn: !GetAtt GetLinuxVolumesFunction.Arn
         CreateLinuxDiskAlarmsFunctionArn: !GetAtt CreateLinuxDiskAlarmsFunction.Arn
         CreateWindowsDiskAlarmsFunctionArn: !GetAtt CreateWindowsDiskAlarmsFunction.Arn
+        DeleteEc2DiskAlarmsFunctionArn: !GetAtt DeleteEc2DiskAlarmsFunction.Arn
+        GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
       Events:
         EC2StateToRunning:
           Type: CloudWatchEvent 
@@ -283,6 +286,7 @@ Resources:
               detail:
                 state: 
                   - running
+                  - terminated
         ApiEvent:
           Type: Api
           Properties:
@@ -290,9 +294,11 @@ Resources:
             Method: POST
             RestApiId:
               Ref: AutoOpsApiGateway
-      Policies: 
+      Policies:
         - LambdaInvokePolicy:
-            FunctionName: !Ref GetInstanceDetailFunction
+            FunctionName: !Ref LoadEc2AlarmAutoCreatingInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetInstanceDetailFunction 
         - LambdaInvokePolicy:
             FunctionName: !Ref GetWindowsVolumesFunction
         - LambdaInvokePolicy:
@@ -301,6 +307,10 @@ Resources:
             FunctionName: !Ref CreateLinuxDiskAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateWindowsDiskAlarmsFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteEc2DiskAlarmsFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetSSMInformationFunction
   GetVolumeDetailsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -347,7 +357,7 @@ Resources:
       Environment:
         Variables:
           SSM_DOCNAME: !Ref GetWindowsVolumesDoc
-  GetEbsAlarmDetailFunction:
+  LoadEbsAutoScalingInputFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -355,7 +365,7 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 15
-      CodeUri: functions/GetEbsAlarmDetail
+      CodeUri: functions/LoadEbsAutoScalingInput
   GrowLinuxXfsFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
@@ -382,16 +392,6 @@ Resources:
       Environment:
         Variables:
           SSM_DOCNAME: !Ref GrowWindowsNtfsDoc
-  GetInstanceDetailFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties: 
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: functions/GetInstanceDetail
-      Policies: [AmazonEC2ReadOnlyAccess]
   GetWindowsVolumesFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -425,7 +425,7 @@ Resources:
       Runtime: python3.8
       Description: ''
       MemorySize: 128
-      Timeout: 120
+      Timeout: 30
       CodeUri: functions/CreateLinuxDiskAlarms
       Policies: [CloudWatchFullAccess]
       Environment:
@@ -438,12 +438,54 @@ Resources:
       Runtime: python3.8
       Description: ''
       MemorySize: 128
-      Timeout: 120
+      Timeout: 30
       CodeUri: functions/CreateWindowsDiskAlarms
       Policies: [CloudWatchFullAccess]       
       Environment:
         Variables:
-          FREE_THRESHOLD: 20 
+          FREE_THRESHOLD: 20
+  DeleteEc2DiskAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/DeleteEc2DiskAlarms
+      Policies: [CloudWatchFullAccess]       
+  GetSSMInformationFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetSSMInformation
+      Policies: [AmazonSSMFullAccess]       
+      Environment:
+        Variables:
+          FREE_THRESHOLD: 20
+  LoadEc2AlarmAutoCreatingInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/LoadEc2AlarmAutoCreatingInput
+  GetInstanceDetailFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/GetInstanceDetail
+      Policies: [AmazonEC2ReadOnlyAccess]
 Outputs:
   EBSScalingStateMachineArn:
     Description: "EBS auto-scaling state machine ARN"
