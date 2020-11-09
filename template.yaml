@@ -1,4 +1,5 @@
-AWSTemplateFormatVersion: "2010-09-09"
+
+WSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
@@ -11,193 +12,6 @@ Metadata:
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
 Resources:
-  GetWindowsVolumesDoc:
-    Type: AWS::SSM::Document
-    Properties: 
-      DocumentType: Command
-      Content: >
-        {
-          "schemaVersion": "2.2",
-          "description": "List Disks on Windows Instance",
-          "parameters": {},
-          "mainSteps": [
-            {
-              "action": "aws:runPowerShellScript",
-              "name": "GetWindowsVolumesDoc",
-              "inputs": {
-                "runCommand": [
-                  "function Get-EC2InstanceMetadata {",
-                  "  param([string]$Path)",
-                  "  (Invoke-WebRequest -Uri \"http://169.254.169.254/latest/$Path\" -UseBasicParsing).Content",
-                  "}",
-                  "function Convert-SCSITargetIdToDeviceName {",
-                  "  param([int]$SCSITargetId)",
-                  "  If ($SCSITargetId -eq 0) {",
-                  "    return \"sda1\"",
-                  "  }",
-                  "  $deviceName = \"xvd\"",
-                  "  If ($SCSITargetId -gt 25) {",
-                  "    $deviceName += [char](0x60 + [int]($SCSITargetId / 26))",
-                  "  }",
-                  "  $deviceName += [char](0x61 + $SCSITargetId % 26)",
-                  "  return $deviceName",
-                  "}",
-                  "Try {",
-                  "  $InstanceId = Get-EC2InstanceMetadata \"meta-data/instance-id\"",
-                  "  $AZ = Get-EC2InstanceMetadata \"meta-data/placement/availability-zone\"",
-                  "  $Region = $AZ.Remove($AZ.Length - 1)",
-                  "  $BlockDeviceMappings = (Get-EC2Instance -Region $Region -Instance $InstanceId).Instances.BlockDeviceMappings",
-                  "  $VirtualDeviceMap = @{}",
-                  "  (Get-EC2InstanceMetadata \"meta-data/block-device-mapping\").Split(\"`n\") | ForEach-Object {",
-                  "    $VirtualDevice = $_",
-                  "    $BlockDeviceName = Get-EC2InstanceMetadata \"meta-data/block-device-mapping/$VirtualDevice\"",
-                  "    $VirtualDeviceMap[$BlockDeviceName] = $VirtualDevice",
-                  "    $VirtualDeviceMap[$VirtualDevice] = $BlockDeviceName",
-                  "  }",
-                  "}",
-                  "Catch {",
-                  "  Write-Host \"Could not access the AWS API, therefore, VolumeId is not available. ",
-                  "Verify that you provided your access keys.\" -ForegroundColor Yellow",
-                  "}",
-                  "",
-                  "Get-disk | ForEach-Object {",
-                  "  $DriveLetter = $null",
-                  "  $VolumeName = $null",
-                  "",
-                  "  $DiskDrive = $_",
-                  "  $Disk = $_.Number",
-                  "  $Partitions = $_.NumberOfPartitions",
-                  "  $EbsVolumeID = $_.SerialNumber -replace \"_[^ ]*$\" -replace \"vol\", \"vol-\"",
-                  "  Get-Partition -DiskId $_.Path | ForEach-Object {",
-                  "    if ($_.DriveLetter -ne \"\") {",
-                  "      $DriveLetter = $_.DriveLetter",
-                  "      $VolumeName = (Get-PSDrive | Where-Object {$_.Name -eq $DriveLetter}).Description",
-                  "    }",
-                  "  } ",
-                  "",
-                  "  If ($DiskDrive.path -like \"*PROD_PVDISK*\") {",
-                  "    $BlockDeviceName = Convert-SCSITargetIdToDeviceName((Get-WmiObject -Class Win32_Diskdrive | Where-Object {$_.DeviceID -eq (\"\\\\.\\PHYSICALDRIVE\" + $DiskDrive.Number) }).SCSITargetId)",
-                  "    $BlockDeviceName = \"/dev/\" + $BlockDeviceName",
-                  "    $BlockDevice = $BlockDeviceMappings | Where-Object { $BlockDeviceName -like \"*\"+$_.DeviceName+\"*\" }",
-                  "    $EbsVolumeID = $BlockDevice.Ebs.VolumeId ",
-                  "    $VirtualDevice = If ($VirtualDeviceMap.ContainsKey($BlockDeviceName)) { $VirtualDeviceMap[$BlockDeviceName] } Else { $null }",
-                  "  }",
-                  "  ElseIf ($DiskDrive.path -like \"*PROD_AMAZON_EC2_NVME*\") {",
-                  "    $BlockDeviceName = Get-EC2InstanceMetadata \"meta-data/block-device-mapping/ephemeral$((Get-WmiObject -Class Win32_Diskdrive | Where-Object {$_.DeviceID -eq (\"\\\\.\\PHYSICALDRIVE\"+$DiskDrive.Number) }).SCSIPort - 2)\"",
-                  "    $BlockDevice = $null",
-                  "    $VirtualDevice = If ($VirtualDeviceMap.ContainsKey($BlockDeviceName)) { $VirtualDeviceMap[$BlockDeviceName] } Else { $null }",
-                  "  }",
-                  "  ElseIf ($DiskDrive.path -like \"*PROD_AMAZON*\") {",
-                  "    $BlockDevice = \"\"",
-                  "    $BlockDeviceName = ($BlockDeviceMappings | Where-Object {$_.ebs.VolumeId -eq $EbsVolumeID}).DeviceName",
-                  "    $VirtualDevice = $null",
-                  "  }",
-                  "  Else {",
-                  "    $BlockDeviceName = $null",
-                  "    $BlockDevice = $null",
-                  "    $VirtualDevice = $null",
-                  "  }",
-                  "  New-Object PSObject -Property @{",
-                  "    Disk          = $Disk;",
-                  "    Partitions    = $Partitions;",
-                  "    DriveLetter   = If ($DriveLetter -eq $null) { \"N/A\" } Else { $DriveLetter };",
-                  "    EbsVolumeId   = If ($EbsVolumeID -eq $null) { \"N/A\" } Else { $EbsVolumeID };",
-                  "    Device        = If ($BlockDeviceName -eq $null) { \"N/A\" } Else { $BlockDeviceName };",
-                  "    VirtualDevice = If ($VirtualDevice -eq $null) { \"N/A\" } Else { $VirtualDevice };",
-                  "    VolumeName    = If ($VolumeName -eq $null) { \"N/A\" } Else { $VolumeName };",
-                  "  }",
-                  "} | Sort-Object Disk | Format-Table -AutoSize -Property Disk, Partitions, DriveLetter, EbsVolumeId, Device, VirtualDevice, VolumeName"
-                ]
-              }
-            }
-          ]
-        } 
-  GetLinuxVolumesDoc:
-    Type: AWS::SSM::Document
-    Properties: 
-      DocumentType: Command
-      Content: >
-        {
-          "schemaVersion": "2.2",
-          "description": "List Disks on Linux Instance",
-          "parameters": {},
-          "mainSteps": [
-            {
-              "action": "aws:runShellScript",
-              "name": "GetLinuxVolumes",
-              "inputs": {
-                "runCommand": [
-                  "df -l | grep ^/dev/"
-                ]
-              }
-            }
-          ]
-        }
-  GrowLinuxXfsDoc:
-    Type: AWS::SSM::Document
-    Properties: 
-      DocumentType: Command
-      Content: >
-        {
-          "schemaVersion": "2.2",
-          "description": "Command Document Example JSON Template",
-          "parameters": {
-            "DeviceName": {
-              "type": "String",
-              "description": "Device Name ",
-              "default": "/dev/xvda"
-            },
-            "PartitionNum": {
-              "type": "String",
-              "description": "Device Number ",
-              "default": "1"
-            },
-            "MountPoint": {
-              "type": "String",
-              "description": "Mount Point ",
-              "default": "/"
-            }
-          },
-          "mainSteps": [
-            {
-              "action": "aws:runShellScript",
-              "name": "GrowLinuxXfsDoc",
-              "inputs": {
-                "runCommand": [
-                  "growpart {{DeviceName}} {{PartitionNum}}",
-                  "xfs_growfs -d {{MountPoint}}"
-                ]
-              }
-            }
-          ]
-        }
-  GrowWindowsNtfsDoc:
-    Type: AWS::SSM::Document
-    Properties: 
-      DocumentType: Command
-      Content: >
-        {
-          "schemaVersion": "2.2",
-          "description": "Command Document Example JSON Template",
-          "parameters": {
-            "DriveLetter": {
-              "type": "String",
-              "description": "Drive letter to grow",
-              "default": "d"
-            }
-          },
-          "mainSteps": [
-            {
-              "action": "aws:runPowerShellScript",
-              "name": "GrowWindowsNtfsDoc",
-              "inputs": {
-                "runCommand": [
-                  "Resize-Partition -DriveLetter {{DriveLetter}} -Size (Get-PartitionSupportedSize -DriveLetter {{DriveLetter}}).sizemax"
-                ]
-              }
-            }
-          ]
-        }
   AutoOpsApiGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -205,77 +19,17 @@ Resources:
       EndpointConfiguration: PRIVATE
       Auth:
         ResourcePolicy:
-          SourceVpcWhitelist: 
+          SourceVpcWhitelist:
             - vpc-0f085c75
-  EBSScalingStateMachine:
+  EbsTagUpdatingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: statemachine/ebs_autoscaling.asl.json
+      DefinitionUri: statemachine/EbsTagAutoUpdating/state.asl.json
       DefinitionSubstitutions:
-        GetVolumeDetailsFunctionArn: !GetAtt GetVolumeDetailsFunction.Arn
-        ModifyVolumeSizeFunctionArn: !GetAtt ModifyVolumeSizeFunction.Arn
-        GetVolumeIdForWindowsFunctionArn: !GetAtt GetVolumeIdForWindowsFunction.Arn
-        GetVolumeIdForLinuxFunctionArn: !GetAtt GetVolumeIdForLinuxFunction.Arn
-        LoadEbsAutoScalingInputFunctionArn: !GetAtt LoadEbsAutoScalingInputFunction.Arn
-        GrowLinuxXfsFunctionArn: !GetAtt GrowLinuxXfsFunction.Arn
-        GrowWindowsNtfsFunctionArn: !GetAtt GrowWindowsNtfsFunction.Arn
+        LoadEbsTagAutoUpdatingInputFunctionArn: !GetAtt LoadEbsTagAutoUpdatingInputFunction.Arn
+        CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn      
       Events:
-        EBSSpaceAlarm:
-          Type: CloudWatchEvent 
-          Properties:
-            Pattern:
-              source:
-                - aws.cloudwatch
-              detail-type:
-                - "CloudWatch Alarm State Change"
-              detail:
-                configuration: 
-                  metrics:
-                    metricStat:
-                      metric:
-                        name:
-                          - "disk_used_percent"
-                          - "LogicalDisk % Free Space"
-                state:
-                  value: 
-                    - ALARM
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /ebs_scale
-            Method: POST
-            RestApiId:
-              Ref: AutoOpsApiGateway
-      Policies: 
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetVolumeDetailsFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref ModifyVolumeSizeFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetVolumeIdForWindowsFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetVolumeIdForLinuxFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref LoadEbsAutoScalingInputFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GrowLinuxXfsFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GrowWindowsNtfsFunction
-  EC2AlarmCreatingStateMachine:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      DefinitionUri: statemachine/ec2alarm_autocreating.asl.json
-      DefinitionSubstitutions:
-        LoadEc2AlarmAutoCreatingInputFunctionArn: !GetAtt LoadEc2AlarmAutoCreatingInputFunction.Arn
-        GetInstanceDetailFunctionArn: !GetAtt GetInstanceDetailFunction.Arn
-        GetWindowsVolumesFunctionArn: !GetAtt GetWindowsVolumesFunction.Arn
-        GetLinuxVolumesFunctionArn: !GetAtt GetLinuxVolumesFunction.Arn
-        CreateLinuxDiskAlarmsFunctionArn: !GetAtt CreateLinuxDiskAlarmsFunction.Arn
-        CreateWindowsDiskAlarmsFunctionArn: !GetAtt CreateWindowsDiskAlarmsFunction.Arn
-        DeleteEc2DiskAlarmsFunctionArn: !GetAtt DeleteEc2DiskAlarmsFunction.Arn
-        GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
-      Events:
-        EC2StateToRunning:
+        EC2Running:
           Type: CloudWatchEvent 
           Properties:
             Pattern:
@@ -286,32 +40,20 @@ Resources:
               detail:
                 state: 
                   - running
-                  - terminated
         ApiEvent:
           Type: Api
           Properties:
-            Path: /ec2_alarm_create
+            Path: /ebs_tag_update
             Method: POST
             RestApiId:
               Ref: AutoOpsApiGateway
       Policies:
         - LambdaInvokePolicy:
-            FunctionName: !Ref LoadEc2AlarmAutoCreatingInputFunction 
+            FunctionName: !Ref LoadEbsTagAutoUpdatingInputFunction 
         - LambdaInvokePolicy:
-            FunctionName: !Ref GetInstanceDetailFunction 
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetWindowsVolumesFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetLinuxVolumesFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref CreateLinuxDiskAlarmsFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref CreateWindowsDiskAlarmsFunction 
-        - LambdaInvokePolicy:
-            FunctionName: !Ref DeleteEc2DiskAlarmsFunction 
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GetSSMInformationFunction
-  GetVolumeDetailsFunction:
+            FunctionName: !Ref CreateEbsTagsFromEc2Function
+
+  CreateEbsTagsFromEc2Function:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -319,22 +61,13 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: functions/GetVolumeDetails
-      Policies: [AmazonEC2ReadOnlyAccess]
-  ModifyVolumeSizeFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/ModifyVolumeSize
+      CodeUri: functions/CreateEbsTagsFromEc2
       Policies: [AmazonEC2FullAccess]
       Environment:
         Variables:
-          SCALING_SIZE: 10
-  GetVolumeIdForLinuxFunction:
+          TAGS_TO_SYNC: 'Name,Project'
+
+  LoadEbsTagAutoUpdatingInputFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -342,161 +75,10 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: functions/GetVolumeIdForLinux
-      Policies: [AmazonEC2ReadOnlyAccess]
-  GetVolumeIdForWindowsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 120
-      CodeUri: functions/GetVolumeIdForWindows
-      Policies: [AmazonSSMFullAccess]
-      Environment:
-        Variables:
-          SSM_DOCNAME: !Ref GetWindowsVolumesDoc
-  LoadEbsAutoScalingInputFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: functions/LoadEbsAutoScalingInput
-  GrowLinuxXfsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties: 
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: functions/GrowLinuxXfs
-      Policies: [AmazonSSMFullAccess]
-      Environment:
-        Variables:
-          SSM_DOCNAME: !Ref GrowLinuxXfsDoc
-  GrowWindowsNtfsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties: 
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: functions/GrowWindowsNtfs
-      Policies: [AmazonSSMFullAccess]
-      Environment:
-        Variables:
-          SSM_DOCNAME: !Ref GrowWindowsNtfsDoc
-  GetWindowsVolumesFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 120
-      CodeUri: functions/GetWindowsVolumes
-      Policies: [AmazonSSMFullAccess]
-      Environment:
-        Variables:
-          SSM_DOCNAME: !Ref GetWindowsVolumesDoc
-  GetLinuxVolumesFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 120
-      CodeUri: functions/GetLinuxVolumes
-      Policies: [AmazonSSMFullAccess]
-      Environment:
-        Variables:
-          SSM_DOCNAME: !Ref GetLinuxVolumesDoc
-  CreateLinuxDiskAlarmsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/CreateLinuxDiskAlarms
-      Policies: [CloudWatchFullAccess]
-      Environment:
-        Variables:
-          USAGE_THRESHOLD: 80
-  CreateWindowsDiskAlarmsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/CreateWindowsDiskAlarms
-      Policies: [CloudWatchFullAccess]       
-      Environment:
-        Variables:
-          FREE_THRESHOLD: 20
-  DeleteEc2DiskAlarmsFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/DeleteEc2DiskAlarms
-      Policies: [CloudWatchFullAccess]       
-  GetSSMInformationFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 120
-      CodeUri: functions/GetSSMInformation
-      Policies: [AmazonSSMFullAccess]       
-      Environment:
-        Variables:
-          FREE_THRESHOLD: 20
-  LoadEc2AlarmAutoCreatingInputFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/LoadEc2AlarmAutoCreatingInput
-  GetInstanceDetailFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: functions/GetInstanceDetail
-      Policies: [AmazonEC2ReadOnlyAccess]
+      CodeUri: functions/LoadEbsTagAutoUpdatingInput
+
+
 Outputs:
-  EBSScalingStateMachineArn:
-    Description: "EBS auto-scaling state machine ARN"
-    Value: !Ref EBSScalingStateMachine
-  EC2AlarmCreatingStateMachineArn:
-    Description: "EC2 disk alarm auto-creating state machine ARN"
-    Value: !Ref EC2AlarmCreatingStateMachine
   APIEndpoint:
     Description: "APIGateway Endpoint to start start machines' execution"
-    Value: !Join ["/", ["https:", "", !Join [".", [!Ref AutoOpsApiGateway, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref AutoOpsApiGatewayProdStage]]  
-
-
-
-
+    Value: !Join ["/", ["https:", "", !Join [".", [!Ref AutoOpsApiGateway, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref AutoOpsApiGatewayProdStage]]

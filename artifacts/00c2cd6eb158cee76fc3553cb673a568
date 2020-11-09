@@ -1,0 +1,91 @@
+# AutoOps
+
+This project contains useful operational processes represented as state machines with AWS StepFunctions. 
+
+## What it does
+
+Currently, it creates EBS usage alarms when EC2 instances starts and scales up EBS volumes and file systems automatically. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up and the Step Functions will stop with error on trying to scale up file systems.
+
+- Result on CentOS:
+
+    ![](doc/result_centos.png)
+
+- Result on Windows:
+
+    ![](doc/result_windows.png)
+
+## How to deploy
+
+0. Prerequisites
+
+    - For running SSM command, you need to install SSM Agent in your EC2 instances. Please refet to [https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html]
+
+    - For monitoring the disk usage, you need to install and config CloudWatch agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html]
+
+1. With SAM CLI installed
+    ```
+    # sam build
+    # sam deploy --guided
+    ```
+2. Without SAM CLI, use CloudFormation template directly
+    - Create a S3 bucket and prefix "AutoOps"
+    - Upload the files in artifacts/ to s3://bucket-name/AutoOps. You need to replace "bucket-name" with your own S3 bucket name in following commands.
+    ```
+    # aws s3 sync ./artifacts s3://bucket-name/AutoOps
+    ```
+    - Modify the CloudFormation template packaged.yaml
+        - Linux:
+        ```
+        # sed -i 's/<your S3 bucket>/bucket-name/g' packaged.yaml
+        ```
+        - MacOS:
+        ```
+        # sed -i '' 's/<your S3 bucket>/bucket-name/g' packaged.yaml
+        ```
+    - Run CloudFormation with packaged.yaml, the outputs of CloudFormation includes:
+        1. EC2 disk alarm auto-creating state machine ARN
+        2. EBS auto-scaling state machine ARN
+        3. APIGateway Endpoint to start start machines' execution
+
+## How to try
+
+The state machines, who represent operational process, should be triggered by CloudWatch events. 
+
+For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
+
+**Please be noted that you should apply other security service such as IAM authorization to protect this API.**
+
+1. EC2 disk arlam auto-creating
+
+    ```
+    # curl <APIGateway Endpoint>/ec2_alarm_create -X POST -d '{"input": "{\"detail-type\": \"EC2 Instance State-change Notification\", \"source\": \"aws.ec2\", \"detail\": {\"instance-id\": \"<Your EC2 Instance ID for test>\", \"state\": \"running\"}}","stateMachineArn": "<EC2 disk alarm auto-creating state machine ARN>"}'
+    ```
+
+    For Linux instance, CloudWatch event rules will be created for each ebs attached to this instance. The alarm threshold is 80% by default. If you want to change the threshold, please update Environment of Lambda function CreateLinuxDiskAlarms.
+
+    For Windows instance, CloudWatch event rules will be created for each ebs attached to this instance. The alarm threshold is 20% by default. If you want to change the threshold, please update Environment of Lambda function CreateWindowsDiskAlarms.
+
+2. EBS auto-scaling on Linux
+
+    ```
+    # curl <APIGateway Endpoint>/ebs_scale -X POST -d '{"input": "{\"detail-type\": \"CloudWatch Alarm State Change\",\"source\": \"aws.cloudwatch\",\"detail\": {\"alarmName\": \"DiskSpace\",\"state\": {\"value\": \"ALARM\"},\"configuration\": {\"metrics\": [{\"metricStat\": {\"metric\": {\"namespace\": \"CWAgent\",\"name\": \"disk_used_percent\",\"dimensions\": {\"path\": \"<The mount point of device>\",\"InstanceId\": \"<Your EC2 Instance ID for test>\",\"device\": \"<The device name in OS>\",\"fstype\": \"xfs\"}}}}]}}}","stateMachineArn": "<EBS auto-scaling state machine ARN>"}'
+    ```
+
+3. EBS auto-scaling on Windows
+
+    ```
+    # curl <APIGateway Endpoint>/ebs_scale -X POST -d '{"input": "{\"detail-type\": \"CloudWatch Alarm State Change\",\"source\": \"aws.cloudwatch\",\"detail\": {\"alarmName\": \"DiskSpace\",\"state\": {\"value\": \"ALARM\"},\"configuration\": {\"metrics\": [{\"metricStat\": {\"metric\": {\"namespace\": \"CWAgent\",\"name\": \"LogicalDisk % Free Space\",\"dimensions\": {\"instance\": \"<The Drive Letter>:\",\"InstanceId\": \"<Your EC2 Instance ID for test>\"}}}}]}}}","stateMachineArn": "<EBS auto-scaling state machine ARN>"}'
+    ```
+## How it works
+
+- State machine to put disk alarms when EC2 instances go running
+
+    ![](doc/ec2alarm_autocreating.asl.png)
+
+- State mechine to scale EBS volume and its file systerm when disk alarm happenes
+
+    ![](doc/ebs_autoscaling.asl.png)
+
+
+
+curl https://hmqpt2gce1.execute-api.us-east-1.amazonaws.com/Prod/distribution_tag_update -X POST -d '{"input":"{AWS API Call via CloudTrail\",\"source\":\"aws.cloudfront\",\"detail\":{\"userIdentity\":{\"type\":\"IAMUser\",\"userName\":\"admin\"},\"responseElements\":{\"distribution\":{\"aRN\":\"arn:aws:cloudfront::597377428377:distribution/EQLMY603422PO\"}}}}","stateMachineArn": "arn:aws:states:us-east-1:597377428377:stateMachine:DistributionTagUpdatingStateMachine-b2CxYtUJVAUu"}'
