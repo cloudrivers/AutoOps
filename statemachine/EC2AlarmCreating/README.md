@@ -2,7 +2,7 @@
 
 - State machine to put disk alarms when EC2 instances go running
 
-    ![](doc/ec2alarm_autocreating.asl.png)
+    ![](../../doc/ec2alarm_autocreating.asl.png)
 
 This state machine creates EBS usage alarms when EC2 instances starts.
 

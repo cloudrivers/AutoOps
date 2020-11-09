@@ -2,15 +2,15 @@
 
 - State mechine to scale EBS volume and its file systerm when disk alarm happenes
 
-    ![](doc/ebs_autoscaling.asl.png)
+    ![](../../doc/ebs_autoscaling.asl.png)
 
 - Result on CentOS:
 
-    ![](doc/result_centos.png)
+    ![](../../doc/result_centos.png)
 
 - Result on Windows:
 
-    ![](doc/result_windows.png)
+    ![](../../doc/result_windows.png)
 
 This state machine scales up EBS volumes and file systems automatically, which is triggered by EC2 alarms. Since only XFS and NTFS can be scaled up online, if the file systems on your EC2 instances are other than those, please be noted that only the EBS volumes will be scaled up and the Step Functions will stop with error on trying to scale up file systems.
 

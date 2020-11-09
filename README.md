@@ -2,10 +2,10 @@
 
 This project contains useful operational processes represented as state machines with AWS StepFunctions. 
 
-- ![EBS Auto Scale](EBSScaling/README.md)
-- ![EC2 Alarm Create](EC2AlarmCreating/README.md)
-- ![Distributin Tag Update](DistributionAutoTag/README.md)
-- ![EBS Tag Update](EbsTagAutoUpdating/README.md)
+- [EBS Auto Scale](statemachine/EBSScaling)
+- [EC2 Alarm Create](statemachine/EC2AlarmCreating)
+- [Distributin Tag Update](statemachine/DistributionAutoTag)
+- [EBS Tag Update](statemachine/EbsTagAutoUpdating)
 
 ## How to deploy
 
