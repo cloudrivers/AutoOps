@@ -4,16 +4,20 @@ This project contains useful operational processes represented as state machines
 
 - [EBS Auto Scale](statemachine/EBSScaling)
 - [EC2 Alarm Create](statemachine/EC2AlarmCreating)
-- [Distributin Tag Update](statemachine/DistributionAutoTag)
+- [Distribution Tag Update](statemachine/DistributionAutoTag)
 - [EBS Tag Update](statemachine/EbsTagAutoUpdating)
 
 ## How to deploy
 
 0. Pick up state machines and generate the CloudFormation template
     ```
-    # git clone 
-    # cd 
-    # python3 ./gen_template.py statemachine/<state machine name>/ statemachine/<state machine name>/ ...
+    # git clone https://github.com/lprincewhn/AutoOps.git
+    # cd AutoOps/
+    # python3 ./gen_template.py \
+        statemachine/DistributionAutoTag/ \
+        statemachine/EbsTagAutoUpdating/ \
+        statemachine/EC2AlarmCreating/ \
+        statemachine/EBSScaling/ \
     ```
 
 1. With SAM CLI installed
@@ -21,8 +25,12 @@ This project contains useful operational processes represented as state machines
     # sam build
     # sam deploy --guided
     ```
+
 2. Without SAM CLI, use CloudFormation template directly
     - Create a S3 bucket and prefix "AutoOps"
+    ```
+    # aws s3 mb s3://your-bucket-name
+    ```    
     - Upload the files in artifacts/ to s3://your-bucket-name/AutoOps. You need to replace "your-bucket-name" with your own S3 bucket name in following commands.
     ```
     # aws s3 sync ./artifacts s3://your-bucket-name/AutoOps
