@@ -3,7 +3,7 @@ import sys
 import json
 
 header='''
-WSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.

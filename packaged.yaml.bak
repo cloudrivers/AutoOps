@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+WSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: 'AutoOps contains useful operational processes represented as a state
   machines with AWS StepFunctions.
@@ -10,7 +10,7 @@ Metadata:
     Description: A toolkit for auto ops in AWS.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
-    ReadmeUrl: s3://<your S3 bucket>/AutoOps/f27b1c6f094c23ade69b7c8a6e19cab1
+    ReadmeUrl: s3://vivo-s3-sg-autoops-repo/AutoOps/00c2cd6eb158cee76fc3553cb673a568
     SemanticVersion: '0.0.1'
 Resources:
   AutoOpsApiGateway:
@@ -26,7 +26,7 @@ Resources:
     Type: AWS::Serverless::StateMachine
     Properties:
       DefinitionUri:
-        Bucket: <your S3 bucket>
+        Bucket: vivo-s3-sg-autoops-repo
         Key: AutoOps/1825a14fd9d9812a20788d14536d605b
       DefinitionSubstitutions:
         LoadEbsTagAutoUpdatingInputFunctionArn:
@@ -63,15 +63,6 @@ Resources:
       - LambdaInvokePolicy:
           FunctionName:
             Ref: CreateEbsTagsFromEc2Function
-  LoadEbsTagAutoUpdatingInputFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: s3://<your S3 bucket>/AutoOps/a38ace59594ae93ee021b9dae044fc64
   CreateEbsTagsFromEc2Function:
     Type: AWS::Serverless::Function
     Properties:
@@ -80,12 +71,21 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: s3://<your S3 bucket>/AutoOps/b4ba3ad8d862552b1904a89d9560362a
+      CodeUri: s3://vivo-s3-sg-autoops-repo/AutoOps/b4ba3ad8d862552b1904a89d9560362a
       Policies:
       - AmazonEC2FullAccess
       Environment:
         Variables:
           TAGS_TO_SYNC: Name,Project
+  LoadEbsTagAutoUpdatingInputFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: s3://vivo-s3-sg-autoops-repo/AutoOps/a38ace59594ae93ee021b9dae044fc64
 Outputs:
   APIEndpoint:
     Description: APIGateway Endpoint to start start machines' execution

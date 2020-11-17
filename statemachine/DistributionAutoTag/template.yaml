@@ -1,7 +1,7 @@
   DistributionTagUpdatingStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: statemachine/DistributionTagUpdating/state.asl.json
+      DefinitionUri: statemachine/DistributionAutoTag/state.asl.json
       DefinitionSubstitutions:
         LoadDistributionTagAutoUpdatingInputFunctionArn: !GetAtt LoadDistributionTagAutoUpdatingInputFunction.Arn
         GetDistributionTagFunctionArn: !GetAtt GetDistributionTagFunction.Arn
