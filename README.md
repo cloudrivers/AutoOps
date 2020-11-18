@@ -29,20 +29,23 @@ This project contains useful operational processes represented as state machines
 2. Without SAM CLI, use CloudFormation template directly
     - Create a S3 bucket and prefix "AutoOps"
     ```
-    # aws s3 mb s3://your-bucket-name
+    # export your_bucket_name=<your-bucket-name>
+    # aws s3 mb s3://${your_bucket_name}
     ```    
     - Upload the files in artifacts/ to s3://your-bucket-name/AutoOps. You need to replace "your-bucket-name" with your own S3 bucket name in following commands.
     ```
-    # aws s3 sync ./artifacts s3://your-bucket-name/AutoOps
+    # aws s3 sync ./artifacts s3://${your_bucket_name}/AutoOps
     ```
     - Modify the CloudFormation template packaged.yaml
         - Linux:
         ```
-        # sed -i 's/<your S3 bucket>/your-bucket-name/g' packaged.yaml
+        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
+        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
         ```
         - MacOS:
         ```
-        # sed -i '' 's/<your S3 bucket>/your-bucket-name/g' packaged.yaml
+        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
+        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
         ```
     - Run CloudFormation with packaged.yaml
 
