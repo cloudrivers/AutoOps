@@ -11,7 +11,7 @@ def lambda_handler(event, context):
     )
     print(f'Response: {response}')
     in_use_by = response['Certificate']['InUseBy']
-    event['message']=f'以下证书即将过期：\n\t证书ARN: {event.get("resourceId")}\t过期时间: {event.get("annotation")}\n\n关联资源:\n'
+    event['message']=f'以下证书即将过期：\n\t证书ARN: {event.get("resourceId")}\n\t过期时间: {event.get("annotation")}\n\n关联资源:\n'
     for r in in_use_by:
         event['message'] += f'\t{r}\n'
     client = boto3.client('sns')
