@@ -16,7 +16,7 @@ This state machine scales up EBS volumes and file systems automatically, which i
 
 ## Prerequisites
 
-    - For running SSM command, you need to install SSM Agent in your EC2 instances. Please refet to [https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html]
+    - For running SSM command, you need to install SSM Agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html]
 
     - For monitoring the disk usage, you need to install and config CloudWatch agent in your EC2 instances. Please refer to [https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html]
 

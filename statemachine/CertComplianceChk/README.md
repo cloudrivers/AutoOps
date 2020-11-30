@@ -1,16 +1,12 @@
 # ACM certificate expire notification
 
-- State machine to check compliance of ACM certificates and send notification.
+- State machine to check compliance of ACM certificates and it will send SNS notification when found a certificate is to expire.
 
     ![](../../doc/cert_compliance_check.asl.png)
 
-This state machine will send SNS notification when certicate in ACM is to exprie.
-
 ## Prerequisites
 
-The AWS Config rule to check compliance of ACM certificates should be deployed with CloudFormation.
-
-[https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/acm-certificate-expiration-check.html](https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/acm-certificate-expiration-check.html)
+The AWS Config rule to check compliance of ACM certificates should be deployed with CloudFormation. Please refer to [https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/acm-certificate-expiration-check.html]
 
 ## Testing
 
