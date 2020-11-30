@@ -6,6 +6,7 @@ This project contains useful operational processes represented as state machines
 - [EC2 Alarm Create](statemachine/EC2AlarmCreating)
 - [Distribution Tag Update](statemachine/DistributionAutoTag)
 - [EBS Tag Update](statemachine/EbsTagAutoUpdating)
+- [ACM Certificate Expire Notification](statemachine/CertComplianceChk)
 
 ## How to deploy
 
@@ -18,6 +19,7 @@ This project contains useful operational processes represented as state machines
         statemachine/EbsTagAutoUpdating/ \
         statemachine/EC2AlarmCreating/ \
         statemachine/EBSScaling/ \
+        statemachine/CertComplianceChk/ \
     ```
 
 1. With SAM CLI installed
@@ -53,7 +55,7 @@ This project contains useful operational processes represented as state machines
 
 The state machines, who represent operational process, should be triggered by CloudWatch events. 
 
-For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
+For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify Resource Policy of the API to allow invokation. You need to re-deploy the API after you modify its Resource Policy.
 
 **Please be noted that you should apply other security service such as IAM authorization to protect this API.**
 

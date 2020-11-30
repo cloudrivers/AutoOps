@@ -23,13 +23,15 @@ Resources:
       EndpointConfiguration: PRIVATE
       Auth:
         ResourcePolicy:
-          SourceVpcWhitelist:
-            - vpc-0f085c75
+          IpRangeWhitelist:
+            - 192.168.0.0/24
+  AutoOpsSnsTopic:
+    Type: AWS::SNS::Topic
 '''
 tailer='''
 Outputs:
   APIEndpoint:
-    Description: "APIGateway Endpoint to start start machines' execution"
+    Description: "APIGateway Endpoint to start status machines' execution"
     Value: !Join ["/", ["https:", "", !Join [".", [!Ref AutoOpsApiGateway, "execute-api", !Ref AWS::Region, "amazonaws.com"]], !Ref AutoOpsApiGatewayProdStage]]
 '''
 

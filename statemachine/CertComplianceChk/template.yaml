@@ -1,0 +1,36 @@
+  CertComplianceChk:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/CertComplianceChk/state.asl.json
+      DefinitionSubstitutions:
+        LoadCertComplianceChkInputFunctionArn: !GetAtt LoadCertComplianceChkInputFunction.Arn
+        NotifyCertExpiredFunctionArn: !GetAtt NotifyCertExpiredFunction.Arn
+      Events:
+        CertNonCompliant:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.config
+              detail-type:
+                - "Config Rules Compliance Change"
+              detail:
+                resourceType: 
+                  - AWS::ACM::Certificate
+                messageType:
+                  - ComplianceChangeNotification
+                newEvaluationResult:
+                  complianceType:
+                    - NON_COMPLIANT
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /cert-non-comliant
+            Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadCertComplianceChkInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifyCertExpiredFunction 

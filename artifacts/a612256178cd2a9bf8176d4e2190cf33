@@ -1,0 +1,20 @@
+{
+  "Comment": "Notify users when certificate will expire.",
+  "StartAt": "LoadCertComplianceChkInput",
+  "States": {
+    "LoadCertComplianceChkInput": {
+      "Type": "Task",
+      "Resource": "${LoadCertComplianceChkInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NotifyCertExpired"
+    },
+    "NotifyCertExpired": {
+      "Type": "Task",
+      "Resource": "${NotifyCertExpiredFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    }
+  }
+}

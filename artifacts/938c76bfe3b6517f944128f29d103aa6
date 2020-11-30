@@ -39,13 +39,13 @@ This project contains useful operational processes represented as state machines
     - Modify the CloudFormation template packaged.yaml
         - Linux:
         ```
-        # sed -i 's/<your S3 bucket>/${your_bucket_name}/g' packaged.yaml
-        # aws s3 cp ./packaged.yaml s3://${your_bucket_name}/AutoOps/
+        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
+        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
         ```
         - MacOS:
         ```
-        # sed -i '' 's/<your S3 bucket>/${your_bucket_name}/g' packaged.yaml
-        # aws s3 cp ./packaged.yaml s3://${your_bucket_name}/AutoOps/
+        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
+        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
         ```
     - Run CloudFormation with packaged.yaml
 
@@ -53,7 +53,7 @@ This project contains useful operational processes represented as state machines
 
 The state machines, who represent operational process, should be triggered by CloudWatch events. 
 
-For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify the Resource Policy of the API to allow your VPC to invoke. 
+For testing or manually starting, a private API is also created so you can start execution of state machines by REST requests. If you want to do this, please create a VPC endpoint to Api Gateway service and modify Resource Policy of the API to allow invokation. You need to re-deploy the API after you modify its Resource Policy.
 
 **Please be noted that you should apply other security service such as IAM authorization to protect this API.**
 
