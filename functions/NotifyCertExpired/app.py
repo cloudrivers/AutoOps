@@ -17,6 +17,7 @@ def lambda_handler(event, context):
     client = boto3.client('sns')
     response = client.publish(
         TopicArn=os.getenv('SNS_TOPIC'),
+        Subject='证书过期提醒',
         Message=event['message']
     )
     print(f'Response: {response}')
